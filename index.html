@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>GJ - SuperPesquet</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="script.js"></script>
+  </head>
+  <style>
+	html {
+		width: 100%;
+		height: 100%;
+		overflow: hidden;
+	}
+  </style>
+  <script type="module">
+import kaboom from "https://unpkg.com/kaboom/dist/kaboom.mjs";
+
+// Start game
+kaboom({
+	background: [ 135, 206, 235 ]
+})
+
+loadSprite("dirt", "./sprites/dirt.png")
+loadSprite("fulldirt", "./sprites/fulldirt.png")
+loadSprite("coblestone", "./sprites/coblestone.png")
+loadSprite("stone", "./sprites/stone.png")
+loadSprite("door", "./sprites/door.png")
+loadSprite("lava", "./sprites/lava.png")
+loadSprite("barriere", "./sprites/barriere.png")
+loadSprite("slime", "./sprites/slime.png")
+loadSprite("timi", "./sprites/timi.png")
+loadSprite("root", "./sprites/root.png")
+
+const objs = [
+	"dirt",
+	"fulldirt",
+	"stone",
+	"door",
+	"lava",
+	"door",
+	"lava",
+	"timi",
+	"slime",
+]
+
+for (const obj of objs) {
+	loadSprite(obj, `./sprites/${obj}.png`)
+}
+
+let POWER = 0
+
+/////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////
+
+scene("game", () => {
+	const BULLET_SPEED = 1200
+	const TRASH_SPEED = 120
+	const BOSS_SPEED = 48
+	const PLAYER_SPEED = 480
+	const STAR_SPEED = 120
+	const BOSS_HEALTH = 1000
+	const OBJ_HEALTH = 4
+
+	const bossName = choose(objs)
+
+	let insaneMode = false
+
+	function grow(rate) {
+		return {
+			update() {
+				const n = rate * dt()
+				this.scale.x += n
+				this.scale.y += n
+			},
+		}
+	}
+
+	function late(t) {
+		let timer = 0
+		return {
+			add() {
+				this.hidden = true
+			},
+			update() {
+				timer += dt()
+				if (timer >= t) {
+					this.hidden = false
+				}
+			},
+		}
+	}
+
+	add([
+		text("KILL", { size: 160 }),
+		pos(width() / 2, height() / 2),
+		origin("center"),
+		lifespan(1),
+		fixed(),
+	])
+
+	add([
+		text("THE", { size: 80 }),
+		pos(width() / 2, height() / 2),
+		origin("center"),
+		lifespan(2),
+		late(1),
+		fixed(),
+	])
+
+	add([
+		text(bossName.toUpperCase(), { size: 120 }),
+		pos(width() / 2, height() / 2),
+		origin("center"),
+		lifespan(4),
+		late(2),
+		fixed(),
+	])
+
+	const sky = add([
+		rect(width(), height()),
+		color(0, 0, 0),
+		opacity(0),
+	])
+
+	sky.onUpdate(() => {
+		if (insaneMode) {
+			const t = time() * 10
+			sky.color.r = wave(127, 255, t)
+			sky.color.g = wave(127, 255, t + 1)
+			sky.color.b = wave(127, 255, t + 2)
+			sky.opacity = 1
+		} else {
+			sky.color = rgb(0, 0, 0)
+			sky.opacity = 0
+		}
+	})
+
+// 	add([
+// 		sprite("stars"),
+// 		scale(width() / 240, height() / 240),
+// 		pos(0, 0),
+// 		"stars",
+// 	])
+
+// 	add([
+// 		sprite("stars"),
+// 		scale(width() / 240, height() / 240),
+// 		pos(0, -height()),
+// 		"stars",
+// 	])
+
+// 	onUpdate("stars", (r) => {
+// 		r.move(0, STAR_SPEED * (insaneMode ? 10 : 1))
+// 		if (r.pos.y >= height()) {
+// 			r.pos.y -= height() * 2
+// 		}
+// 	})
+
+	const player = add([
+		sprite("lava"),
+		area(),
+		pos(width() / 2, height() - 64),
+		origin("center"),
+	])
+
+	onKeyDown("left", () => {
+		player.move(-PLAYER_SPEED, 0)
+		if (player.pos.x < 0) {
+			player.pos.x = width()
+		}
+	})
+
+	onKeyDown("right", () => {
+		player.move(PLAYER_SPEED, 0)
+		if (player.pos.x > width()) {
+			player.pos.x = 0
+		}
+	})
+
+	onKeyPress("up", () => {
+		insaneMode = true
+	})
+
+	onKeyRelease("up", () => {
+		insaneMode = false
+	})
+
+	player.onCollide("enemy", (e) => {
+		destroy(e)
+		destroy(player)
+		shake(120)
+		// play("explode")
+		addExplode(center(), 12, 120, 30)
+		wait(1, () => {
+			go("lose")
+		})
+	})
+
+	function addExplode(p, n, rad, size) {
+		for (let i = 0; i < n; i++) {
+			wait(rand(n * 0.1), () => {
+				for (let i = 0; i < 2; i++) {
+					add([
+						pos(p.add(rand(vec2(-rad), vec2(rad)))),
+						rect(4, 4),
+						outline(4),
+						scale(1 * size, 1 * size),
+						lifespan(0.1),
+						grow(rand(48, 72) * size),
+						origin("center"),
+					])
+				}
+			})
+		}
+	}
+
+	function spawnBullet(p) {
+		add([
+			rect(12, 48),
+			area(),
+			pos(p),
+			origin("center"),
+			color(127, 127, 255),
+			outline(4),
+			move(UP, BULLET_SPEED),
+			cleanup(),
+			// strings here means a tag
+			"bullet",
+		])
+	}
+
+	onUpdate("bullet", (b) => {
+		if (insaneMode) {
+			b.color = rand(rgb(0, 0, 0), rgb(255, 255, 255))
+		}
+	})
+
+	onKeyPress("space", () => {
+		spawnBullet(player.pos.sub(16, 0))
+		spawnBullet(player.pos.add(16, 0))
+		// play("shoot", {
+		// 	volume: 0.3,
+		// 	detune: rand(-1200, 1200),
+		// })
+	})
+
+	function spawnTrash() {
+		const name = choose(objs.filter(n => n != bossName))
+		add([
+			sprite(name),
+			area(),
+			pos(rand(0, width()), 0),
+			health(OBJ_HEALTH),
+			origin("bot"),
+			"trash",
+			"enemy",
+			{ speed: rand(TRASH_SPEED * 0.5, TRASH_SPEED * 1.5) },
+		])
+		wait(insaneMode ? 0.1 : 0.3, spawnTrash)
+	}
+
+	const boss = add([
+		sprite(bossName),
+		area(),
+		pos(width() / 2, 40),
+		health(BOSS_HEALTH),
+		scale(3),
+		origin("top"),
+		"enemy",
+		{
+			dir: 1,
+		},
+	])
+
+	on("death", "enemy", (e) => {
+		destroy(e)
+		shake(2)
+		addKaboom(e.pos)
+	})
+
+	on("hurt", "enemy", (e) => {
+		shake(1)
+		// play("hit", {
+		// 	detune: rand(-1200, 1200),
+		// 	speed: rand(0.2, 2),
+		// })
+	})
+
+	const timer = add([
+		text(0),
+		pos(12, 32),
+		fixed(),
+		{ time: 0, },
+	])
+
+	timer.onUpdate(() => {
+		timer.time += dt()
+		timer.text = timer.time.toFixed(2)
+	})
+
+	onCollide("bullet", "enemy", (b, e) => {
+		destroy(b)
+		e.hurt(insaneMode ? 10 : 1)
+		addExplode(b.pos, 1, 24, 1)
+	})
+
+	onUpdate("trash", (t) => {
+		t.move(0, t.speed * (insaneMode ? 5 : 1))
+		if (t.pos.y - t.height > height()) {
+			destroy(t)
+		}
+	})
+
+	boss.onUpdate((p) => {
+		boss.move(BOSS_SPEED * boss.dir * (insaneMode ? 3 : 1), 0)
+		if (boss.dir === 1 && boss.pos.x >= width() - 20) {
+			boss.dir = -1
+		}
+		if (boss.dir === -1 && boss.pos.x <= 20) {
+			boss.dir = 1
+		}
+	})
+
+	boss.onHurt(() => {
+		healthbar.set(boss.hp())
+	})
+
+	boss.onDeath(() => {
+		go("win", {
+			time: timer.time,
+			boss: bossName,
+		})
+	})
+
+	const healthbar = add([
+		rect(width(), 24),
+		pos(0, 0),
+		color(127, 255, 127),
+		fixed(),
+		{
+			max: BOSS_HEALTH,
+			set(hp) {
+				this.width = width() * hp / this.max
+				this.flash = true
+			},
+		},
+	])
+
+	healthbar.onUpdate(() => {
+		if (healthbar.flash) {
+			healthbar.color = rgb(255, 255, 255)
+			healthbar.flash = false
+		} else {
+			healthbar.color = rgb(127, 255, 127)
+		}
+	})
+
+	add([
+		text("UP: insane mode", { width: width() / 2, size: 32 }),
+		origin("botleft"),
+		pos(24, height() - 24),
+	])
+
+	spawnTrash()
+
+	onKeyPress("f", () => {
+			fullscreen(!fullscreen())
+	})
+})
+
+/////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////
+
+function addButton(txt, p, f) {
+
+const btn = add([
+	text(txt, {
+		font: "sink",
+		size: 48,
+		width: width() - 24 * 2,
+		lineSpacing: 8,
+		letterSpacing: 4,
+	}),
+	pos(p),
+	area({ cursor: "pointer", }),
+	origin("center"),
+])
+
+btn.onClick(f)
+
+btn.onUpdate(() => {
+	if (btn.isHovering()) {
+		const t = time() * 10
+		btn.color = rgb(
+			wave(0, 255, t),
+			wave(0, 255, t + 2),
+			wave(0, 255, t + 4),
+		)
+	} else {
+		btn.scale = vec2(1)
+		btn.color = rgb()
+	}
+})
+
+}
+
+
+scene("dialogs", ({ dialog_n }) => {
+const dialogs = [
+	[ "slime", "hi my butterfly" ],
+	[ "slime", "i love u" ],
+	[ "slime", "you love me? pretty baby" ],
+	[ "slime", "mark is a stupid" ],
+	[ "slime", "he did not know how to take care of you..." ],
+	[ "timi", "you don't know me ..." ],
+	[ "slime", "what! timi???" ],
+	[ "timi", "oh...hi " ],
+]
+
+let curDialog = 0
+
+// Text bubble
+const textbox = add([
+	rect(width() - 200, 120, { radius: 0 }),
+	origin("center"),
+	pos(center().x, height() - 100),
+	outline(2),
+])
+
+// Text
+const txt = add([
+	text("", { size: 32, width: width() - 230 }),
+	pos(textbox.pos),
+	origin("center")
+])
+
+// Character avatar
+const avatar = add([
+	sprite("slime"),
+	scale(3),
+	origin("center"),
+	pos(center().sub(0, 50))
+])
+
+onKeyPress("space", () => {
+	// Cycle through the dialogs
+	if ((curDialog + 1) < dialogs.length) {
+		curDialog = (curDialog + 1)
+		updateDialog()
+	} else {
+		go("game")
+	}
+})
+
+// Update the on screen sprite & text
+function updateDialog() {
+
+	const [ char, dialog ] = dialogs[curDialog]
+
+	// Use a new sprite component to replace the old one
+	avatar.use(sprite(char))
+	// Update the dialog text
+	txt.text = dialog
+
+}
+
+updateDialog()
+})
+
+
+
+scene("menu", () => {
+add([
+	text("SuperPesquet", {
+		font: "sink",
+		size: 48,
+		width: width() - 24 * 2,
+		lineSpacing: 8,
+		letterSpacing: 4,
+	}),
+	origin("center"),
+	pos(vec2((width() / 2), 200)),
+])
+addButton("Start", vec2((width() / 2), (height() / 2)), () => go("dialogs", {
+	dialog_n: 0,
+}))
+addButton("Quit", vec2((width() / 2), (height() / 2) + 100), () => debug.log("bah non mdr ?"))
+onUpdate(() => cursor("default"))
+})
+
+scene("lose", () => {
+	add([
+	text("Vous êtes mort et la terre a ete envahie par Batman !", {
+		font: "sink",
+		size: 48,
+		width: width() - 24 * 2,
+		lineSpacing: 8,
+		letterSpacing: 4,
+	}),
+	origin("center"),
+	pos(vec2((width() / 2), 200)),
+])
+
+// Press any key to go back
+onKeyPress(restart)
+})
+
+scene("win", () => {
+
+add([
+	text("Win", {
+		font: "sink",
+		size: 48,
+		width: width() - 24 * 2,
+		lineSpacing: 8,
+		letterSpacing: 4,
+	}),
+	origin("center"),
+	pos(vec2((width() / 2), 200)),
+])
+
+onKeyPress(start)
+
+})
+
+function start() {
+	go("menu")
+}
+
+function restart() {
+	go("game")
+}
+
+start()
+
+</script>
+<body>
+</body>
+</html>
