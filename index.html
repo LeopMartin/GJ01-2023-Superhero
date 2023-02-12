@@ -18,7 +18,7 @@ import kaboom from "https://unpkg.com/kaboom/dist/kaboom.mjs";
 
 // Start game
 kaboom({
-	background: [ 135, 206, 235 ]
+	background: [2, 0, 66]
 })
 
 loadSprite("dirt", "./sprites/dirt.png")
@@ -49,20 +49,24 @@ for (const obj of objs) {
 }
 
 let POWER = 0
+let GAMELOOP = 0
 
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
 
-scene("game", () => {
+scene("game", ({haveboss, haveenemy}) => {
 	const BULLET_SPEED = 1200
 	const TRASH_SPEED = 120
 	const BOSS_SPEED = 48
-	const PLAYER_SPEED = 480
+	const PLAYER_SPEED = 500
 	const STAR_SPEED = 120
-	const BOSS_HEALTH = 1000
+	const BOSS_HEALTH = 200
 	const OBJ_HEALTH = 4
+	// let heath_player = 3
+	let score = 0
+	let equ = 1.5
 
 	const bossName = choose(objs)
 
@@ -94,7 +98,8 @@ scene("game", () => {
 	}
 
 	add([
-		text("KILL", { size: 160 }),
+		text("PROTECT", { size: 160,
+			font: "sinko" }),
 		pos(width() / 2, height() / 2),
 		origin("center"),
 		lifespan(1),
@@ -102,7 +107,8 @@ scene("game", () => {
 	])
 
 	add([
-		text("THE", { size: 80 }),
+		text("EARTH", { size: 80,
+			font: "sinko" }),
 		pos(width() / 2, height() / 2),
 		origin("center"),
 		lifespan(2),
@@ -110,18 +116,9 @@ scene("game", () => {
 		fixed(),
 	])
 
-	add([
-		text(bossName.toUpperCase(), { size: 120 }),
-		pos(width() / 2, height() / 2),
-		origin("center"),
-		lifespan(4),
-		late(2),
-		fixed(),
-	])
-
 	const sky = add([
 		rect(width(), height()),
-		color(0, 0, 0),
+		color(255, 255, 255),
 		opacity(0),
 	])
 
@@ -137,27 +134,6 @@ scene("game", () => {
 			sky.opacity = 0
 		}
 	})
-
-// 	add([
-// 		sprite("stars"),
-// 		scale(width() / 240, height() / 240),
-// 		pos(0, 0),
-// 		"stars",
-// 	])
-
-// 	add([
-// 		sprite("stars"),
-// 		scale(width() / 240, height() / 240),
-// 		pos(0, -height()),
-// 		"stars",
-// 	])
-
-// 	onUpdate("stars", (r) => {
-// 		r.move(0, STAR_SPEED * (insaneMode ? 10 : 1))
-// 		if (r.pos.y >= height()) {
-// 			r.pos.y -= height() * 2
-// 		}
-// 	})
 
 	const player = add([
 		sprite("lava"),
@@ -180,12 +156,20 @@ scene("game", () => {
 		}
 	})
 
-	onKeyPress("up", () => {
-		insaneMode = true
+	
+	onKeyDown("up", () => {
+		player.move(0, -PLAYER_SPEED)
+		if (player.pos.y > width()) {
+			player.pos.y = 0
+		}
 	})
 
-	onKeyRelease("up", () => {
-		insaneMode = false
+	
+	onKeyDown("down", () => {
+		player.move(0, PLAYER_SPEED)
+		if (player.pos.y > width()) {
+			player.pos.y = 0
+		}
 	})
 
 	player.onCollide("enemy", (e) => {
@@ -223,7 +207,7 @@ scene("game", () => {
 			area(),
 			pos(p),
 			origin("center"),
-			color(127, 127, 255),
+			color(256, 0, 0),
 			outline(4),
 			move(UP, BULLET_SPEED),
 			cleanup(),
@@ -238,7 +222,7 @@ scene("game", () => {
 		}
 	})
 
-	onKeyPress("space", () => {
+	onClick(() => {
 		spawnBullet(player.pos.sub(16, 0))
 		spawnBullet(player.pos.add(16, 0))
 		// play("shoot", {
@@ -247,38 +231,32 @@ scene("game", () => {
 		// })
 	})
 
+	onKeyPress("space", () => {
+		spawnBullet(player.pos.sub(16, 0))
+		spawnBullet(player.pos.add(16, 0))
+	})
+
 	function spawnTrash() {
-		const name = choose(objs.filter(n => n != bossName))
-		add([
-			sprite(name),
-			area(),
-			pos(rand(0, width()), 0),
-			health(OBJ_HEALTH),
-			origin("bot"),
-			"trash",
-			"enemy",
-			{ speed: rand(TRASH_SPEED * 0.5, TRASH_SPEED * 1.5) },
-		])
-		wait(insaneMode ? 0.1 : 0.3, spawnTrash)
+		if (haveenemy == 1) {
+			const name = choose(objs.filter(n => n != bossName))
+			add([
+				sprite(name),
+				area(),
+				pos(rand(0, width()), 0),
+				health(OBJ_HEALTH),
+				origin("bot"),
+				"trash",
+				"enemy",
+				{ speed: rand(TRASH_SPEED * 0.5, TRASH_SPEED * 1.5) },
+			])
+			wait(insaneMode ? equ : equ + 0.5, spawnTrash)
+		}
 	}
-
-	const boss = add([
-		sprite(bossName),
-		area(),
-		pos(width() / 2, 40),
-		health(BOSS_HEALTH),
-		scale(3),
-		origin("top"),
-		"enemy",
-		{
-			dir: 1,
-		},
-	])
-
+		
 	on("death", "enemy", (e) => {
 		destroy(e)
 		shake(2)
-		addKaboom(e.pos)
+		score++
 	})
 
 	on("hurt", "enemy", (e) => {
@@ -289,8 +267,21 @@ scene("game", () => {
 		// })
 	})
 
+	const heath_player = add([
+		text("life:" + 0, {
+			font: "sink",
+			size: 36,
+		}),
+		pos(12, 100 ),
+		fixed(),
+		{ heath: 3, },
+	])
+
 	const timer = add([
-		text(0),
+		text(0, {
+			font: "sink",
+			size: 36,
+		}),
 		pos(12, 32),
 		fixed(),
 		{ time: 0, },
@@ -298,7 +289,11 @@ scene("game", () => {
 
 	timer.onUpdate(() => {
 		timer.time += dt()
-		timer.text = timer.time.toFixed(2)
+		timer.text = "Time: " + timer.time.toFixed(1)
+	})
+
+	heath_player.onUpdate(() => {
+		heath_player.text = "Life: " + heath_player.heath
 	})
 
 	onCollide("bullet", "enemy", (b, e) => {
@@ -311,8 +306,31 @@ scene("game", () => {
 		t.move(0, t.speed * (insaneMode ? 5 : 1))
 		if (t.pos.y - t.height > height()) {
 			destroy(t)
+			shake(120)
+			heath_player.heath--
+			if (heath_player.heath == 0) {
+				destroy(player)
+				addExplode(center(), 12, 120, 30)
+				wait(1, () => {
+					go("lose")
+				})
+			}
 		}
 	})
+
+
+	const boss = add([
+		sprite(bossName),
+		area(),
+		pos(width() / 2, -1000),
+		health(BOSS_HEALTH),
+		scale(3),
+		origin("top"),
+		"enemy",
+		{
+			dir: 1,
+		},
+	])
 
 	boss.onUpdate((p) => {
 		boss.move(BOSS_SPEED * boss.dir * (insaneMode ? 3 : 1), 0)
@@ -322,6 +340,18 @@ scene("game", () => {
 		if (boss.dir === -1 && boss.pos.x <= 20) {
 			boss.dir = 1
 		}
+		if (score == 10 && haveboss == 0) {
+			shake(120)
+			addExplode(center(), 12, 120, 30)
+			
+			wait(1  , () => {
+				go("dialogs", {
+				dialog_n: 1,
+			})})
+		}
+		if (haveboss == 1) {
+			boss.pos.y = 40;
+		}
 	})
 
 	boss.onHurt(() => {
@@ -329,10 +359,7 @@ scene("game", () => {
 	})
 
 	boss.onDeath(() => {
-		go("win", {
-			time: timer.time,
-			boss: bossName,
-		})
+		go("win")
 	})
 
 	const healthbar = add([
@@ -357,12 +384,6 @@ scene("game", () => {
 			healthbar.color = rgb(127, 255, 127)
 		}
 	})
-
-	add([
-		text("UP: insane mode", { width: width() / 2, size: 32 }),
-		origin("botleft"),
-		pos(24, height() - 24),
-	])
 
 	spawnTrash()
 
@@ -411,16 +432,28 @@ btn.onUpdate(() => {
 
 
 scene("dialogs", ({ dialog_n }) => {
-const dialogs = [
-	[ "slime", "hi my butterfly" ],
-	[ "slime", "i love u" ],
-	[ "slime", "you love me? pretty baby" ],
-	[ "slime", "mark is a stupid" ],
-	[ "slime", "he did not know how to take care of you..." ],
-	[ "timi", "you don't know me ..." ],
-	[ "slime", "what! timi???" ],
-	[ "timi", "oh...hi " ],
-]
+const dialogs = {
+	0:[
+		["slime", "hi my butterfly"],
+		["slime", "i love u"],
+		["slime", "you love me? pretty baby"],
+		["slime", "mark is a stupid"],
+		["slime", "he did not know how to take care of you..."],
+		["timi", "you don't know me ..."],
+		["slime", "what! timi???"],
+		["timi", "oh...hi "],
+	],
+	1:[
+		["timi", "hi my butterfly"],
+		["timi", "i love u"],
+		["timi", "you love me? pretty baby"],
+		["timi", "mark is a stupid"],
+		["timi", "he did not know how to take care of you..."],
+		["timi", "you don't know me ..."],
+		["timi", "what! timi???"],
+		["timi", "oh...hi "],
+	]
+}
 
 let curDialog = 0
 
@@ -449,18 +482,27 @@ const avatar = add([
 
 onKeyPress("space", () => {
 	// Cycle through the dialogs
-	if ((curDialog + 1) < dialogs.length) {
+	if ((curDialog + 1) < dialogs[dialog_n].length) {
 		curDialog = (curDialog + 1)
 		updateDialog()
+	} else if (GAMELOOP == 0) {
+		go("game", {
+			haveboss: 0,
+			haveenemy: 1
+		})
+		GAMELOOP++
 	} else {
-		go("game")
+		go("game", {
+			haveboss: 1,
+			haveenemy: 0
+		})
 	}
 })
 
 // Update the on screen sprite & text
 function updateDialog() {
 
-	const [ char, dialog ] = dialogs[curDialog]
+	const [ char, dialog ] = dialogs[dialog_n][curDialog]
 
 	// Use a new sprite component to replace the old one
 	avatar.use(sprite(char))
@@ -489,13 +531,16 @@ add([
 addButton("Start", vec2((width() / 2), (height() / 2)), () => go("dialogs", {
 	dialog_n: 0,
 }))
-addButton("Quit", vec2((width() / 2), (height() / 2) + 100), () => debug.log("bah non mdr ?"))
+addButton("Mode: normal", vec2((width() / 2), (height() / 2) + 100), () => go("dialogs", {
+	dialog_n: 0,
+}))
+addButton("Quit", vec2((width() / 2), (height() / 2) + 200), () => debug.log("bah non mdr ?"))
 onUpdate(() => cursor("default"))
 })
 
 scene("lose", () => {
 	add([
-	text("Vous êtes mort et la terre a ete envahie par Batman !", {
+	text("You are dead and the earth has been invaded by THE MECHANT!", {
 		font: "sink",
 		size: 48,
 		width: width() - 24 * 2,
@@ -512,8 +557,8 @@ onKeyPress(restart)
 
 scene("win", () => {
 
-add([
-	text("Win", {
+	add([
+	text("Invasion repelled\nGood job for have been protecting the earth and france!", {
 		font: "sink",
 		size: 48,
 		width: width() - 24 * 2,
@@ -524,8 +569,8 @@ add([
 	pos(vec2((width() / 2), 200)),
 ])
 
+// Press any key to go back
 onKeyPress(start)
-
 })
 
 function start() {
@@ -533,7 +578,10 @@ function start() {
 }
 
 function restart() {
-	go("game")
+	go("game", {
+		haveboss: 0,
+		haveenemy: 1
+	})
 }
 
 start()
