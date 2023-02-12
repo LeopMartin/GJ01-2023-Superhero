@@ -52,7 +52,7 @@ loadSprite("Earth", "./sprites/perso/earth.png")
 
 const music = play("music", {
 	loop: true,
-	volume: 0.05,
+	volume: 0.2,
 })
 
 const objs = [
@@ -468,13 +468,13 @@ btn.onUpdate(() => {
 scene("dialogs", ({ dialog_n }) => {
 const dialogs = {
 	0:[
-		["radio", "..."],
+		["radio", "**Press the space key to follow the dialogues**"],
 		["Earth", "Earth to Pesquet, I repeat, Earth to Pesquet"],
 		["Earth", "Do you copy Pesquet?"],
 		["thomasn", "Pesquet to Earth, I receive you loud and clear"],
 		["Earth", "Asteroids are heading towards Earth! Destroy them before it's too late!"],
 		["thomasd", "Roger that, I'll take care of it. Over"],
-		["radio", "..."],
+		["radio", "**Press the space key to follow the dialogues**"],
 		["Earth", "Be careful, an unidentified object seems to be heading your way!"],
 		["Earth", "What the ... We can't identify what it is but there seems to be a lot of them"],
 		["Earth", "Maybe some debris? Do you make a visual contact?"],
@@ -484,7 +484,7 @@ const dialogs = {
 		["thomasd", "What an interesting day ..."],
 	],
 	1:[
-		["radio", "..."],
+		["radio", "**Press the space key to follow the dialogues**"],
 		["valnukrel", "hi my butterfly"],
 		["thomasn", "I just want to live in peace, go back where you came from!"],
 		["valnukrel", "You have some nerve for an insect!"],
