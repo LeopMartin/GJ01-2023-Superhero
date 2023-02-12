@@ -21,27 +21,50 @@ kaboom({
 	background: [2, 0, 66]
 })
 
-loadSprite("dirt", "./sprites/dirt.png")
-loadSprite("fulldirt", "./sprites/fulldirt.png")
-loadSprite("coblestone", "./sprites/coblestone.png")
-loadSprite("stone", "./sprites/stone.png")
-loadSprite("door", "./sprites/door.png")
-loadSprite("lava", "./sprites/lava.png")
-loadSprite("barriere", "./sprites/barriere.png")
-loadSprite("slime", "./sprites/slime.png")
-loadSprite("timi", "./sprites/timi.png")
-loadSprite("root", "./sprites/root.png")
+
+loadSound("music", "./music/music.mp3")
+loadSound("laser", "./music/laser.mp3")
+loadSound("boom", "./music/boom.mp3")
+/////////////////////////////////////////////////////
+/////////////////////////////////////////////////////
+/////////////////////////////////////////////////////
+loadSprite("bg", "./sprites/bg.png")
+loadSprite("chauve-souris", "./sprites/chauve-souris.png")
+/////////////////////////////////////////////////////
+loadSprite("ass0", "./sprites/ass0.png")
+loadSprite("ass1", "./sprites/ass1.png")
+loadSprite("ass2", "./sprites/ass2.png")
+loadSprite("ass3", "./sprites/ass3.png")
+loadSprite("ass4", "./sprites/ass4.png")
+loadSprite("ass5", "./sprites/ass5.png")
+loadSprite("ass6", "./sprites/ass6.png")
+loadSprite("ass7", "./sprites/ass7.png")
+loadSprite("fuse", "./sprites/fusee.png")
+/////////////////////////////////////////////////////
+loadSprite("thomash", "./sprites/perso/thomas_detendu.png")
+loadSprite("thomasd", "./sprites/perso/thomas_dialogue.png")
+loadSprite("thomasn", "./sprites/perso/thomas_neutre.png")
+/////////////////////////////////////////////////////
+// loadSprite("bigboss", "./sprites/perso/boss.png")
+
+const music = play("music", {
+	loop: true,
+	volume: 0.05,
+})
 
 const objs = [
-	"dirt",
-	"fulldirt",
-	"stone",
-	"door",
-	"lava",
-	"door",
-	"lava",
-	"timi",
-	"slime",
+	"ass0",
+	"ass1",
+	"ass2",
+	"ass3",
+	"ass4",
+	"ass5",
+	"ass6",
+	"ass7",
+	"chauve-souris",
+	"chauve-souris",
+	"chauve-souris",
+	"chauve-souris",
 ]
 
 for (const obj of objs) {
@@ -136,7 +159,7 @@ scene("game", ({haveboss, haveenemy}) => {
 	})
 
 	const player = add([
-		sprite("lava"),
+		sprite("fuse"),
 		area(),
 		pos(width() / 2, height() - 64),
 		origin("center"),
@@ -176,7 +199,7 @@ scene("game", ({haveboss, haveenemy}) => {
 		destroy(e)
 		destroy(player)
 		shake(120)
-		// play("explode")
+		play("boom")
 		addExplode(center(), 12, 120, 30)
 		wait(1, () => {
 			go("lose")
@@ -225,20 +248,22 @@ scene("game", ({haveboss, haveenemy}) => {
 	onClick(() => {
 		spawnBullet(player.pos.sub(16, 0))
 		spawnBullet(player.pos.add(16, 0))
-		// play("shoot", {
-		// 	volume: 0.3,
-		// 	detune: rand(-1200, 1200),
-		// })
+		play("laser", {
+			volume: 0.3,
+		})
 	})
 
 	onKeyPress("space", () => {
 		spawnBullet(player.pos.sub(16, 0))
 		spawnBullet(player.pos.add(16, 0))
+		play("laser", {
+			volume: 0.3,
+		})
 	})
 
 	function spawnTrash() {
 		if (haveenemy == 1) {
-			const name = choose(objs.filter(n => n != bossName))
+			const name = choose(objs)
 			add([
 				sprite(name),
 				area(),
@@ -261,10 +286,9 @@ scene("game", ({haveboss, haveenemy}) => {
 
 	on("hurt", "enemy", (e) => {
 		shake(1)
-		// play("hit", {
-		// 	detune: rand(-1200, 1200),
-		// 	speed: rand(0.2, 2),
-		// })
+		play("boom", {
+			volume: 1,
+		})
 	})
 
 	const heath_player = add([
@@ -434,24 +458,24 @@ btn.onUpdate(() => {
 scene("dialogs", ({ dialog_n }) => {
 const dialogs = {
 	0:[
-		["slime", "hi my butterfly"],
-		["slime", "i love u"],
-		["slime", "you love me? pretty baby"],
-		["slime", "mark is a stupid"],
-		["slime", "he did not know how to take care of you..."],
-		["timi", "you don't know me ..."],
-		["slime", "what! timi???"],
-		["timi", "oh...hi "],
+		["chauve-souris", "hi my butterfly"],
+		["chauve-souris", "i love u"],
+		["chauve-souris", "you love me? pretty baby"],
+		["chauve-souris", "mark is a stupid"],
+		["chauve-souris", "he did not know how to take care of you..."],
+		["thomash", "you don't know me ..."],
+		["chauve-souris", "what! thomash???"],
+		["thomash", "oh...hi "],
 	],
 	1:[
-		["timi", "hi my butterfly"],
-		["timi", "i love u"],
-		["timi", "you love me? pretty baby"],
-		["timi", "mark is a stupid"],
-		["timi", "he did not know how to take care of you..."],
-		["timi", "you don't know me ..."],
-		["timi", "what! timi???"],
-		["timi", "oh...hi "],
+		["thomash", "hi my butterfly"],
+		["thomash", "i love u"],
+		["thomash", "you love me? pretty baby"],
+		["thomash", "mark is a stupid"],
+		["thomash", "he did not know how to take care of you..."],
+		["thomash", "you don't know me ..."],
+		["thomash", "what! thomash???"],
+		["thomash", "oh...hi "],
 	]
 }
 
@@ -474,7 +498,7 @@ const txt = add([
 
 // Character avatar
 const avatar = add([
-	sprite("slime"),
+	sprite("chauve-souris"),
 	scale(3),
 	origin("center"),
 	pos(center().sub(0, 50))
