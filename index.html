@@ -29,6 +29,7 @@ loadSound("boom", "./music/boom.mp3")
 /////////////////////////////////////////////////////
 /////////////////////////////////////////////////////
 loadSprite("bg", "./sprites/bg.png")
+loadSprite("radio", "./sprites/perso/radio.png")
 loadSprite("chauve-souris", "./sprites/chauve-souris.png")
 /////////////////////////////////////////////////////
 loadSprite("ass0", "./sprites/ass0.png")
@@ -44,6 +45,8 @@ loadSprite("fuse", "./sprites/fusee.png")
 loadSprite("thomash", "./sprites/perso/thomas_detendu.png")
 loadSprite("thomasd", "./sprites/perso/thomas_dialogue.png")
 loadSprite("thomasn", "./sprites/perso/thomas_neutre.png")
+loadSprite("valnukrel", "./sprites/perso/Valnukrel.png")
+loadSprite("Earth", "./sprites/perso/earth.png")
 /////////////////////////////////////////////////////
 // loadSprite("bigboss", "./sprites/perso/boss.png")
 
@@ -91,7 +94,7 @@ scene("game", ({haveboss, haveenemy}) => {
 	let score = 0
 	let equ = 1.5
 
-	const bossName = choose(objs)
+	const bossName = "valnukrel"
 
 	let insaneMode = false
 
@@ -383,7 +386,14 @@ scene("game", ({haveboss, haveenemy}) => {
 	})
 
 	boss.onDeath(() => {
-		go("win")
+		shake(20)
+		addExplode(center(), 12, 120, 30)
+		GAMELOOP++
+		wait(1, () => {
+			go("dialogs", {
+				dialog_n: 2,
+			})
+		})
 	})
 
 	const healthbar = add([
@@ -458,24 +468,33 @@ btn.onUpdate(() => {
 scene("dialogs", ({ dialog_n }) => {
 const dialogs = {
 	0:[
-		["chauve-souris", "hi my butterfly"],
-		["chauve-souris", "i love u"],
-		["chauve-souris", "you love me? pretty baby"],
-		["chauve-souris", "mark is a stupid"],
-		["chauve-souris", "he did not know how to take care of you..."],
-		["thomash", "you don't know me ..."],
-		["chauve-souris", "what! thomash???"],
-		["thomash", "oh...hi "],
+		["radio", "..."],
+		["Earth", "Earth to Pesquet, I repeat, Earth to Pesquet"],
+		["Earth", "Do you copy Pesquet?"],
+		["thomasn", "Pesquet to Earth, I receive you loud and clear"],
+		["Earth", "Asteroids are heading towards Earth! Destroy them before it's too late!"],
+		["thomasd", "Roger that, I'll take care of it. Over"],
+		["radio", "..."],
+		["Earth", "Be careful, an unidentified object seems to be heading your way!"],
+		["Earth", "What the ... We can't identify what it is but there seems to be a lot of them"],
+		["Earth", "Maybe some debris? Do you make a visual contact?"],
+		["thomasd", "Yes I do.. But it's weird... It seems to be..."],
+		["thomasn", "SPACE BATS ?! What the ?!"],
+		["valnukrel", "Get out of the way insect!"],
+		["thomasd", "What an interesting day ..."],
 	],
 	1:[
-		["thomash", "hi my butterfly"],
-		["thomash", "i love u"],
-		["thomash", "you love me? pretty baby"],
-		["thomash", "mark is a stupid"],
-		["thomash", "he did not know how to take care of you..."],
-		["thomash", "you don't know me ..."],
-		["thomash", "what! thomash???"],
-		["thomash", "oh...hi "],
+		["radio", "..."],
+		["valnukrel", "hi my butterfly"],
+		["thomasn", "I just want to live in peace, go back where you came from!"],
+		["valnukrel", "You have some nerve for an insect!"],
+		["valnukrel", "You will have the honnor to be exterminated by the Great Valnukrel!"],
+		["thomash", "Let the show begin!"],
+	],
+	2:[
+		["Earth", "Well done Pesquet!"],
+		["Earth", "Knowing you're here, humanity can rest easy."],
+		["Earth", "We owe you a big debt!"],
 	]
 }
 
@@ -491,7 +510,7 @@ const textbox = add([
 
 // Text
 const txt = add([
-	text("", { size: 32, width: width() - 230 }),
+	text("", { size: 32, width: width() - 230, font: "sinko" }),
 	pos(textbox.pos),
 	origin("center")
 ])
@@ -515,11 +534,13 @@ onKeyPress("space", () => {
 			haveenemy: 1
 		})
 		GAMELOOP++
-	} else {
+	} else if (GAMELOOP == 1) {
 		go("game", {
 			haveboss: 1,
 			haveenemy: 0
 		})
+	} else if (GAMELOOP == 2) {
+		go("win")
 	}
 })
 
@@ -564,7 +585,7 @@ onUpdate(() => cursor("default"))
 
 scene("lose", () => {
 	add([
-	text("You are dead and the earth has been invaded by THE MECHANT!", {
+	text("You are dead and the earth has been invaded by Valnukrel", {
 		font: "sink",
 		size: 48,
 		width: width() - 24 * 2,
@@ -594,7 +615,9 @@ scene("win", () => {
 ])
 
 // Press any key to go back
-onKeyPress(start)
+onKeyDown("r", () => {
+	start()
+})
 })
 
 function start() {
